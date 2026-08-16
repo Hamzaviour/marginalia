@@ -4,7 +4,7 @@ Marginalia is an intelligent AI research assistant designed to help you dive dee
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2F%3Cyour-username%3E%2Fmarginalia)
 
-🔗 **Live Demo:** [marginalia-lac.vercel.app](https://marginalia-lac.vercel.app/)
+🔗 **Live Demo:** [marginalia-ochre-nu.vercel.app](https://marginalia-ochre-nu.vercel.app/)
 
 ## ✨ Key Features
 
