@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import ChatClient from "./ChatClient";
 import GlowBackground from "@/components/GlowBackground";
 
+export const dynamic = "force-dynamic";
+
 export default async function ChatPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
