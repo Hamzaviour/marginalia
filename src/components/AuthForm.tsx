@@ -31,9 +31,14 @@ export default function AuthForm({ title, subtitle, fields, submitLabel, onSubmi
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const result = await onSubmit(values);
-    setLoading(false);
-    if (result) setError(result);
+    try {
+      const result = await onSubmit(values);
+      if (result) setError(result);
+    } catch (err: any) {
+      setError(err?.message ?? "An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

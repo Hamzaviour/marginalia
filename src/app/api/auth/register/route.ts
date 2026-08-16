@@ -20,19 +20,27 @@ export async function POST(req: Request) {
     );
   }
 
-  const { name, email, password } = parsed.data;
-  const normalizedEmail = email.toLowerCase().trim();
+  try {
+    const { name, email, password } = parsed.data;
+    const normalizedEmail = email.toLowerCase().trim();
 
-  const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-  if (existing) {
-    return NextResponse.json({ error: "An account with that email already exists" }, { status: 409 });
+    const existing = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+    if (existing) {
+      return NextResponse.json({ error: "An account with that email already exists" }, { status: 409 });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    await prisma.user.create({
+      data: { name: name.trim(), email: normalizedEmail, passwordHash },
+    });
+
+    return NextResponse.json({ ok: true });
+  } catch (err: any) {
+    console.error("Registration error:", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Database error during registration. Check server logs." },
+      { status: 500 }
+    );
   }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-
-  await prisma.user.create({
-    data: { name: name.trim(), email: normalizedEmail, passwordHash },
-  });
-
-  return NextResponse.json({ ok: true });
 }

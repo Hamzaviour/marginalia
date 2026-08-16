@@ -9,15 +9,19 @@ export default function LoginPage() {
   const router = useRouter();
 
   async function handleSubmit(values: Record<string, string>): Promise<string | null> {
-    const result = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    });
+    try {
+      const result = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
 
-    if (result?.error) return "Incorrect email or password.";
-    window.location.href = "/chat";
-    return null;
+      if (result?.error) return "Incorrect email or password.";
+      window.location.href = "/chat";
+      return null;
+    } catch (err: any) {
+      return err?.message ?? "Network error during login. Please try again.";
+    }
   }
 
   return (

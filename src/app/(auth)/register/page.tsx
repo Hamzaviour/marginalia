@@ -9,24 +9,31 @@ export default function RegisterPage() {
   const router = useRouter();
 
   async function handleSubmit(values: Record<string, string>): Promise<string | null> {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
 
-    if (!res.ok) return data.error ?? "Something went wrong.";
+      const data = await res.json().catch(() => null);
 
-    const signInResult = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    });
+      if (!res.ok) {
+        return data?.error ?? `Registration failed (${res.status} ${res.statusText}).`;
+      }
 
-    if (signInResult?.error) return "Account created — please log in.";
-    window.location.href = "/chat";
-    return null;
+      const signInResult = await signIn("credentials", {
+        email: values.email,
+        password: values.password,
+        redirect: false,
+      });
+
+      if (signInResult?.error) return "Account created! Please log in.";
+      window.location.href = "/chat";
+      return null;
+    } catch (err: any) {
+      return err?.message ?? "Network error during registration. Please check your connection.";
+    }
   }
 
   return (
