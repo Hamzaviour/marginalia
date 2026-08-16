@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import ReactMarkdown from "react-markdown";
 import StreamingCursor from "./StreamingCursor";
 import CitationCard, { Citation } from "./CitationCard";
 import BookmarkButton from "./BookmarkButton";
@@ -14,22 +15,19 @@ export interface ChatMessageData {
   streaming?: boolean;
 }
 
-function extractCitations(content: string): { text: string; links: { match: string; index: number; href: string }[] }[] {
-  const parts: { text: string; links: { match: string; index: number; href: string }[] }[] = [];
-  const regex = /\[(\d+)\]/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = regex.exec(content)) !== null) {
-    if (m.index > last) {
-      parts.push({ text: content.slice(last, m.index), links: [] });
+/**
+ * Render inline citation brackets like [1], [2] as clickable links
+ * by pre-processing content to convert them into markdown links.
+ */
+function linkifyCitations(content: string, citationMap: Map<number, Citation>): string {
+  return content.replace(/\[(\d+)\]/g, (match, num) => {
+    const index = parseInt(num, 10);
+    const cit = citationMap.get(index);
+    if (cit) {
+      return `[${match}](${cit.url})`;
     }
-    parts.push({ text: m[0], links: [{ match: m[0], index: parseInt(m[1], 10), href: `#` }] });
-    last = m.index + m[0].length;
-  }
-  if (last < content.length) {
-    parts.push({ text: content.slice(last), links: [] });
-  }
-  return parts.length ? parts : [{ text: content, links: [] }];
+    return match;
+  });
 }
 
 export default function ChatBubble({ message }: { message: ChatMessageData }) {
@@ -43,7 +41,9 @@ export default function ChatBubble({ message }: { message: ChatMessageData }) {
   }
 
   const citationMap = new Map(message.citations?.map((c) => [c.index, c]));
-  const parts = extractCitations(message.content);
+  const processedContent = isUser
+    ? message.content
+    : linkifyCitations(message.content, citationMap);
 
   return (
     <motion.div
@@ -58,30 +58,29 @@ export default function ChatBubble({ message }: { message: ChatMessageData }) {
             ? "bg-amber/90 text-ink"
             : "glass-panel border border-amber/10 text-paper"
         }`}>
-          <span className="whitespace-pre-wrap">
-            {parts.map((part, i) =>
-              part.links.length > 0
-                ? part.links.map((link) => {
-                    const cit = citationMap.get(link.index);
-                    return cit ? (
-                      <a
-                        key={i}
-                        href={cit.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline rounded bg-amber/20 px-1 text-amber hover:bg-amber/30"
-                      >
-                        {link.match}
-                      </a>
-                    ) : (
-                      <span key={i} className="inline rounded bg-amber/20 px-1 text-amber">
-                        {link.match}
-                      </span>
-                    );
-                  })
-                : part.text
-            )}
-          </span>
+          {isUser ? (
+            <span className="whitespace-pre-wrap">{message.content}</span>
+          ) : (
+            <div className="prose prose-sm max-w-none prose-p:my-1 prose-li:my-0.5 prose-a:no-underline hover:prose-a:underline">
+              <ReactMarkdown
+                components={{
+                  a: ({ href, children, ...props }) => (
+                    <a
+                      {...props}
+                      href={href}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline rounded bg-amber/20 px-1 text-amber hover:bg-amber/30"
+                    >
+                      {children}
+                    </a>
+                  ),
+                }}
+              >
+                {processedContent}
+              </ReactMarkdown>
+            </div>
+          )}
           {message.streaming && <StreamingCursor />}
         </div>
         {!isUser && (
@@ -110,3 +109,4 @@ export default function ChatBubble({ message }: { message: ChatMessageData }) {
     </motion.div>
   );
 }
+

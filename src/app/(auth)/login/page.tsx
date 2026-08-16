@@ -16,8 +16,7 @@ export default function LoginPage() {
     });
 
     if (result?.error) return "Incorrect email or password.";
-    router.push("/chat");
-    router.refresh();
+    window.location.href = "/chat";
     return null;
   }
 

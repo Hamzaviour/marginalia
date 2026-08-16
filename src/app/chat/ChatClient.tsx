@@ -6,24 +6,28 @@ import ChatBubble, { ChatMessageData } from "@/components/ChatBubble";
 import ChatInput from "@/components/ChatInput";
 import ExportButton from "@/components/ExportButton";
 import OnboardingTooltip from "@/components/OnboardingTooltip";
-import { GROQ_MODELS } from "@/lib/groq";
+import { DEFAULT_PROVIDER, type ProviderId } from "@/lib/providers";
 
-const GROQ_KEY_STORAGE = "marginalia-groq-key";
-const MODEL_STORAGE = "marginalia-model";
+const API_KEY_STORAGE_PREFIX = "marginalia-api-key:";
+const PROVIDER_STORAGE_KEY = "marginalia-provider";
 
 export default function ChatClient() {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
-  const [groqKey, setGroqKey] = useState("");
-  const [model, setModel] = useState(() => localStorage.getItem(MODEL_STORAGE) ?? GROQ_MODELS[0]);
+  const [provider, setProvider] = useState<ProviderId>(DEFAULT_PROVIDER);
+  const [apiKey, setApiKey] = useState<string>("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setGroqKey(localStorage.getItem(GROQ_KEY_STORAGE) ?? "");
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(PROVIDER_STORAGE_KEY);
+      if (saved) setProvider(saved as ProviderId);
+      setApiKey(localStorage.getItem(`${API_KEY_STORAGE_PREFIX}${provider}`) ?? "");
+    }
     void loadSessions();
   }, []);
 
@@ -31,9 +35,15 @@ export default function ChatClient() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  function handleGroqKeyChange(key: string) {
-    setGroqKey(key);
-    localStorage.setItem(GROQ_KEY_STORAGE, key);
+  function handleProviderChange(newProvider: ProviderId) {
+    setProvider(newProvider);
+    localStorage.setItem(PROVIDER_STORAGE_KEY, newProvider);
+    setApiKey(localStorage.getItem(`${API_KEY_STORAGE_PREFIX}${newProvider}`) ?? "");
+  }
+
+  function handleApiKeyChange(key: string) {
+    setApiKey(key);
+    localStorage.setItem(`${API_KEY_STORAGE_PREFIX}${provider}`, key);
   }
 
   async function loadSessions() {
@@ -76,8 +86,8 @@ export default function ChatClient() {
     setError(null);
     setRetrying(false);
 
-    if (!groqKey.trim()) {
-      setError("Add your Groq API key in the sidebar before sending a message.");
+    if (!apiKey.trim()) {
+      setError(`Add your ${provider} API key in the sidebar before sending a message.`);
       return;
     }
 
@@ -103,7 +113,7 @@ export default function ChatClient() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, message: text, groqApiKey: groqKey, model }),
+        body: JSON.stringify({ sessionId, message: text, provider, apiKey }),
       });
 
       if (!res.ok || !res.body) {
@@ -172,8 +182,10 @@ export default function ChatClient() {
         activeSessionId={activeSessionId}
         onSelectSession={selectSession}
         onNewSession={createSession}
-        groqKey={groqKey}
-        onGroqKeyChange={handleGroqKeyChange}
+        provider={provider}
+        onProviderChange={handleProviderChange}
+        apiKey={apiKey}
+        onApiKeyChange={handleApiKeyChange}
       />
 
       <div className="flex h-full flex-1 flex-col gap-4 p-6">

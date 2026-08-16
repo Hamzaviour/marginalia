@@ -6,13 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { searchArxiv } from "@/lib/arxiv";
 import { rerankBySemanticScore, extractQueryTerms } from "@/lib/semanticSearch";
 import { searchWeb, formatWebSources } from "@/lib/webSearch";
-import { streamGroqDeltas, GROQ_MODELS } from "@/lib/groq";
+import { streamUnifiedChat, PROVIDERS, DEFAULT_PROVIDER, type ProviderId } from "@/lib/unifiedChat";
 
 const chatSchema = z.object({
   sessionId: z.string().min(1),
   message: z.string().min(1).max(4000),
-  groqApiKey: z.string().min(1, "Add your Groq API key in the sidebar first"),
-  model: z.string().optional(),
+  provider: z.enum(PROVIDERS.map((p) => p.id) as [ProviderId, ...ProviderId[]]).default(DEFAULT_PROVIDER),
+  apiKey: z.string().min(1, "Add your API key in the sidebar first"),
 });
 
 export async function POST(req: Request) {
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid input" }, { status: 400 });
   }
-  const { sessionId, message, groqApiKey, model } = parsed.data;
+  const { sessionId, message, provider, apiKey } = parsed.data;
 
   const chatSession = await prisma.chatSession.findUnique({ where: { id: sessionId } });
   if (!chatSession || chatSession.userId !== session.user.id) {
@@ -35,8 +35,12 @@ export async function POST(req: Request) {
     data: { sessionId, role: "user", content: message },
   });
 
+  // Extract keywords for arXiv search (strip stop words like "what", "is", "a")
+  const searchTerms = extractQueryTerms(message);
+  const arxivQuery = searchTerms.length > 0 ? searchTerms.join(" ") : message;
+
   // Search arXiv and rerank by semantic score
-  let papers = await searchArxiv(message, 5).catch(() => [] as any[]);
+  let papers = await searchArxiv(arxivQuery, 5).catch(() => [] as any[]);
   if (papers.length > 0) {
     papers = rerankBySemanticScore(papers, message);
   }
@@ -53,10 +57,9 @@ export async function POST(req: Request) {
     orderBy: { createdAt: "asc" },
     take: 20,
   });
-  const history = priorMessages.map((m) => ({
-    role: m.role as "user" | "assistant",
-    content: m.content,
-  }));
+  const history = priorMessages
+    .filter((m) => m.role === "user" || m.role === "assistant")
+    .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
   // Get previously cited papers for context
   const assistantMessages = priorMessages.filter((m) => m.role === "assistant");
@@ -84,7 +87,12 @@ export async function POST(req: Request) {
     data: { searchText: message.toLowerCase().slice(0, 500) },
   });
 
-  const selectedModel = model && GROQ_MODELS.includes(model) ? model : GROQ_MODELS[0];
+  // Gather previously cited papers for context consistency
+  const previouslyCitedPapers = assistantMessages
+    .map((m) => m.citations ? JSON.parse(m.citations) : [])
+    .flat()
+    .filter((c: any, idx: number, arr: any[]) => arr.findIndex((x) => x.arxivId === c.arxivId) === idx)
+    .slice(-3);
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -93,25 +101,34 @@ export async function POST(req: Request) {
       send({ type: "citations", citations });
 
       let fullText = "";
+      let assistantMessageId = "";
       try {
-        for await (const delta of streamGroqDeltas(groqApiKey, history, papers, webResults)) {
-          fullText += delta;
-          send({ type: "delta", text: delta });
+        const result = await streamUnifiedChat({
+          providerId: provider,
+          apiKey,
+          history,
+          papers,
+          webResults,
+          previouslyCitedPapers,
+        });
+        fullText = result.text;
+        for (const char of fullText) {
+          send({ type: "delta", text: char });
         }
       } catch (err) {
         const detail = err instanceof Error ? err.message : "Unknown error";
-        send({ type: "error", error: `Groq request failed — ${detail}` });
+        send({ type: "error", error: `${provider} request failed — ${detail}` });
         controller.close();
         return;
       }
 
-      if (!fullText.trim()) {
-        send({ type: "error", error: "Groq returned an empty response." });
+      if (fullText.trim().length === 0) {
+        send({ type: "error", error: "The model returned an empty response. This can happen if: (1) your API key is invalid, (2) the model has safety filters, or (3) the prompt is too long. Try using a different provider or shortening your message." });
         controller.close();
         return;
       }
 
-      await prisma.message.create({
+      const created = await prisma.message.create({
         data: {
           sessionId,
           role: "assistant",
@@ -119,6 +136,7 @@ export async function POST(req: Request) {
           citations: JSON.stringify(citations),
         },
       });
+      assistantMessageId = created.id;
 
       await prisma.chatSession.update({
         where: { id: sessionId },
@@ -127,7 +145,7 @@ export async function POST(req: Request) {
 
       send({
         type: "done",
-        messageId: fullText,
+        messageId: assistantMessageId,
         sessionTitle: isNewThread ? newTitle : chatSession.title,
       });
       controller.close();

@@ -1,28 +1,23 @@
 import type { ArxivPaper } from "@/lib/arxiv";
 import type { WebSearchResult } from "./webSearch";
-
 export const GROQ_MODELS = [
-  "llama-3.3-70b-versatile",
+  "llama-4-maverick-17b-128e-instruct",
+  "llama-4-scout-17b-16e-instruct",
   "llama-3.1-8b-instant",
-  "deepseek-r1-distill-llama-70b",
-  "qwen-2.5-72b-instruct",
-  "mixtral-8x7b-32768",
+  "qwen/qwen3.6-27b",
+  "openai/gpt-oss-120b"
 ] as const;
-
 export type GroqModel = (typeof GROQ_MODELS)[number];
-
 interface CitedPaper {
   arxivId: string;
   title: string;
 }
-
 function buildSystemPrompt(
   papers: ArxivPaper[],
   webResults: WebSearchResult[],
   previouslyCitedPapers: CitedPaper[]
 ): string {
   let sources = "";
-
   if (papers.length > 0) {
     sources =
       "### CURRENT SOURCES\n\n" +
@@ -35,7 +30,6 @@ function buildSystemPrompt(
         )
         .join("\n\n");
   }
-
   if (webResults.length > 0) {
     sources +=
       "\n\n### WEB SOURCES\n\n" +
@@ -46,7 +40,6 @@ function buildSystemPrompt(
         )
         .join("\n\n");
   }
-
   const previousContext =
     previouslyCitedPapers.length > 0
       ? `\n\n### PREVIOUSLY CITED PAPERS (maintain consistency with these)\n` +
@@ -54,7 +47,6 @@ function buildSystemPrompt(
           .map((p, i) => `[PREV-${i + 1}] "${p.title}" — arXiv:${p.arxivId}`)
           .join("\n")
       : "";
-
   if (papers.length === 0 && webResults.length === 0) {
     return (
       "You are Marginalia, an AI research assistant. No matching arXiv papers were " +
@@ -64,7 +56,6 @@ function buildSystemPrompt(
       previousContext
     );
   }
-
   return (
     "You are Marginalia, an AI research assistant. Answer the user's question " +
     "using ONLY the sources listed below. Follow these rules strictly:\n\n" +
@@ -78,20 +69,21 @@ function buildSystemPrompt(
     `SOURCES:${previousContext}\n${sources}`
   );
 }
-
 export interface GroqChatMessage {
   role: "user" | "assistant";
   content: string;
 }
-
 export async function* streamGroqDeltas(
   apiKey: string,
   model: GroqModel,
   history: GroqChatMessage[],
   papers: ArxivPaper[],
   webResults: WebSearchResult[] = [],
-  previouslyCitedPapers: CitedPaper[] = []
+  previouslyCitedPapers: CitedPaper[] = [],
+  stats?: { deltaCount: number }
 ): AsyncGenerator<string> {
+  let deltaCount = 0;
+  if (stats) stats.deltaCount = 0;
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -109,35 +101,33 @@ export async function* streamGroqDeltas(
       stream: true,
     }),
   });
-
   if (!res.ok || !res.body) {
     const body = await res.text().catch(() => "");
     throw new Error(`Groq API error (${res.status}): ${body.slice(0, 300)}`);
   }
-
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
-
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
-
     const lines = buffer.split("\n");
     buffer = lines.pop() ?? "";
-
     for (const line of lines) {
       const trimmed = line.trim();
       if (!trimmed.startsWith("data:")) continue;
       const payload = trimmed.slice(5).trim();
       if (payload === "[DONE]") return;
       if (!payload) continue;
-
       try {
         const json = JSON.parse(payload);
         const delta: string | undefined = json?.choices?.[0]?.delta?.content;
-        if (delta) yield delta;
+        if (delta) {
+          deltaCount++;
+          if (stats) stats.deltaCount++;
+          yield delta;
+        }
       } catch {
         // Skip malformed chunks
       }

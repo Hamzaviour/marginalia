@@ -29,12 +29,76 @@ html.light body {
 }
 
 html.light .glass-panel {
-  background: rgba(255, 255, 255, 0.55);
-  border-color: rgba(11, 14, 20, 0.08);
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(11, 14, 20, 0.12);
+  color: #11151f !important;
 }
 
 html.light .glass-panel--sidebar {
-  background: rgba(251, 248, 241, 0.75);
+  background: rgba(251, 248, 241, 0.9);
+}
+
+/* Typography styles for Dark Mode (Default) */
+.prose {
+  --tw-prose-body: #f5f0e6;
+  --tw-prose-headings: #f5f0e6;
+  --tw-prose-lead: #b7becd;
+  --tw-prose-links: #e8a33d;
+  --tw-prose-bold: #f5f0e6;
+  --tw-prose-counters: #8b93a7;
+  --tw-prose-bullets: #e8a33d;
+  --tw-prose-hr: rgba(232, 163, 61, 0.2);
+  --tw-prose-quotes: #f5f0e6;
+  --tw-prose-quote-borders: rgba(232, 163, 61, 0.3);
+  --tw-prose-captions: #8b93a7;
+  --tw-prose-code: #f4be6b;
+  --tw-prose-pre-code: #f5f0e6;
+  --tw-prose-pre-bg: #11151f;
+  --tw-prose-th-borders: rgba(232, 163, 61, 0.2);
+  --tw-prose-td-borders: rgba(232, 163, 61, 0.1);
+  color: #f5f0e6;
+}
+
+/* Typography styles for Light Mode */
+html.light .prose {
+  --tw-prose-body: #11151f;
+  --tw-prose-headings: #0b0e14;
+  --tw-prose-lead: #4b5563;
+  --tw-prose-links: #b45309;
+  --tw-prose-bold: #0b0e14;
+  --tw-prose-counters: #6b7280;
+  --tw-prose-bullets: #d97706;
+  --tw-prose-hr: rgba(11, 14, 20, 0.15);
+  --tw-prose-quotes: #11151f;
+  --tw-prose-quote-borders: rgba(217, 119, 6, 0.3);
+  --tw-prose-captions: #6b7280;
+  --tw-prose-code: #b45309;
+  --tw-prose-pre-code: #11151f;
+  --tw-prose-pre-bg: #f5f0e6;
+  --tw-prose-th-borders: rgba(11, 14, 20, 0.15);
+  --tw-prose-td-borders: rgba(11, 14, 20, 0.08);
+  color: #11151f !important;
+}
+
+html.light .prose p,
+html.light .prose li,
+html.light .prose span,
+html.light .prose td,
+html.light .prose th {
+  color: #11151f !important;
+}
+
+html.light .prose strong,
+html.light .prose b,
+html.light .prose h1,
+html.light .prose h2,
+html.light .prose h3,
+html.light .prose h4 {
+  color: #0b0e14 !important;
+}
+
+html.light .prose a {
+  color: #b45309 !important;
 }
 
 /* Smooth theme transition */

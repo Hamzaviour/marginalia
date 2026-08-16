@@ -7,7 +7,7 @@ Marginalia is an intelligent AI research assistant designed to help you dive dee
 ## ✨ Key Features
 
 - 🚀 **arXiv Deep Search** — Automatically searches arXiv for the most relevant papers.
-- 🧠 **Intelligent Synthesis** — Uses state-of-the-art LLMs (via Groq) to answer questions using *only* the provided sources.
+- 🧠 **Intelligent Synthesis** — Uses state-of-the-art LLMs to answer questions using *only* the provided sources.
 - 📑 **Inline Citations** — Every claim is backed by a `[1]` style citation that links directly to the source.
 - 🔍 **Semantic Reranking** — Advanced token-overlap reranking to ensure the most relevant papers are always prioritized.
 - 🌐 **Web Search Fallback** — Automatically switches to web search if arXiv lacks specific coverage.
@@ -16,8 +16,16 @@ Marginalia is an intelligent AI research assistant designed to help you dive dee
   - **Branching** — Explore different research directions from a single thread.
   - **Bookmarking** — Save your favorite papers to a personal library.
   - **Export** — Download your entire research conversation as a clean Markdown file.
-  - **Multi-Model** — Switch between Llama 3.3, DeepSeek R1, and more.
-- 🌓 **Refined UI** — Elegant light and dark modes with smooth transitions and glassmorphism.
+- 🔌 **Multi-Provider** — Bring your own API key from any supported provider:
+  - **Groq** (default) — Ultra-fast inference, auto-selects the best available model
+  - **OpenAI** — GPT-4o, GPT-4 Turbo
+  - **Anthropic** — Claude 3.5 Sonnet, Claude 3 Opus
+  - **Google Gemini** — Gemini 2.0 Flash, Gemini 2.0 Pro
+  - **DeepSeek** — DeepSeek V3, DeepSeek R1
+  - **Mistral AI** — Mistral Large, Mistral Nemo
+  - **OpenRouter** — 100+ models from all providers
+  - **Omniroute** — Unified routing across providers
+- 🌓 **Refined UI** — Elegant light and dark modes with smooth transitions, glassmorphism, and rendered markdown responses.
 
 ## 🚀 Tech Stack
 
@@ -26,13 +34,13 @@ Marginalia is an intelligent AI research assistant designed to help you dive dee
 - **Styling:** [Tailwind CSS](https://tailwindcss.com/) & [Framer Motion](https://www.framermotion.com/)
 - **Database:** [Prisma](https://www.prisma.io/) + [SQLite](https://www.sqlite.org/) (Local)
 - **Auth:** [NextAuth.js](https://next-auth.js.org/)
-- **AI Engine:** [Groq API](https://groq.com/) (Ultra-fast inference)
+- **AI:** Multi-provider support (Groq, OpenAI, Anthropic, Gemini, DeepSeek, Mistral, OpenRouter, Omniroute)
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js (v18+)
-- A Groq API Key ([get one here](https://console.groq.com/keys))
+- An API key from any supported provider (e.g. [Groq](https://console.groq.com/keys), [OpenAI](https://platform.openai.com/api-keys), etc.)
 
 ### Installation
 
@@ -68,7 +76,7 @@ Marginalia is an intelligent AI research assistant designed to help you dive dee
    npm run dev
    ```
 
-Visit `http://localhost:3000`. Register an account, paste your Groq API key in the sidebar, and start researching!
+Visit `http://localhost:3000`. Register an account, paste your API key in the sidebar, select a provider, and start researching!
 
 ## 🛠️ Deployment (Vercel)
 

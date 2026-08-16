@@ -25,9 +25,7 @@ export default function RegisterPage() {
     });
 
     if (signInResult?.error) return "Account created — please log in.";
-
-    router.push("/chat");
-    router.refresh();
+    window.location.href = "/chat";
     return null;
   }
 

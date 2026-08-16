@@ -51,3 +51,7 @@ lerna-debug.log*
 
 # Debug
 *.log
+
+# Misc
+cookies.txt
+.agents/
