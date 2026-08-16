@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html.light {
+  color-scheme: light;
+}
+
+/* Invert semantic colour tokens in light mode */
+html.light .text-paper,
+html.light .text-paper\/80 {
+  color: theme("colors.ink.DEFAULT") !important;
+}
+html.light .bg-ink,
+html.light .bg-ink\/60,
+html.light .bg-ink\/5 {
+  background-color: theme("colors.paper.DEFAULT") !important;
+}
+html.light .bg-ink\/60 {
+  background-color: theme("colors.paper.card") !important;
+}
+
+html.light body {
+  @apply bg-paper text-ink;
+}
+
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(11, 14, 20, 0.08);
+}
+
+html.light .glass-panel--sidebar {
+  background: rgba(251, 248, 241, 0.75);
+}
+
+/* Smooth theme transition */
+html.theme-transition body,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease !important;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: theme("colors.amber.dim");
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.glass-panel {
+  background: rgba(17, 21, 31, 0.55);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(232, 163, 61, 0.12);
+}
+
+.glass-panel--sidebar {
+  background: rgba(11, 14, 20, 0.7);
+}
+
+/* Visible keyboard focus everywhere, regardless of theme */
+:focus-visible {
+  outline: 2px solid theme("colors.amber.DEFAULT");
+  outline-offset: 2px;
+  border-radius: 4px;
+}

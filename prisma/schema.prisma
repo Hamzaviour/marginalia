@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  sessions     ChatSession[]
+  bookmarks    Bookmark[]
+}
+
+model ChatSession {
+  id        String    @id @default(cuid())
+  title     String    @default("New research thread")
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  // Flattened searchable text for full-text session search
+  searchText String?   @default("")
+  messages  Message[]
+}
+
+model Message {
+  id        String      @id @default(cuid())
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role      String // "user" | "assistant"
+  content   String
+  // JSON-stringified array of { title, authors, arxivId, url, year } for assistant replies
+  citations String?
+  // Parent message ID for branching conversations
+  parentId  String?
+  parent    Message?    @relation("MessageBranch", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Message[]   @relation("MessageBranch")
+  createdAt DateTime    @default(now())
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  arxivId   String
+  title     String
+  authors   String   // comma-separated
+  url       String
+  year      String?
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, arxivId])
+}
