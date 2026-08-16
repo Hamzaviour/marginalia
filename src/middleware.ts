@@ -1,13 +1,12 @@
-import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default withAuth({
-  secret: process.env.NEXTAUTH_SECRET || "marginalia-fallback-auth-secret-key-12345",
-  pages: {
-    signIn: "/login",
-  },
-});
+export function middleware(request: NextRequest) {
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ["/chat", "/chat/:path*", "/api/sessions/:path*", "/api/chat/:path*"],
+  matcher: [],
 };
+
 
